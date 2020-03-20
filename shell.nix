@@ -13,14 +13,13 @@ let
 
   pkgs = import src {};
   inherit (pkgs) haskellPackages;
-  inherit ((import ./default.nix).pre-commit-check) shellHook;
 
   myPackages = haskellPackages.callCabal2nix "project" ./haskell-graphql.cabal {};
   all-hies = import (fetchTarball "https://github.com/infinisil/all-hies/tarball/master") {};
 in
 haskellPackages.shellFor {
   # withHoogle = true;
-  # shellHook = [shellHook];
+  inherit ((import ./default.nix).pre-commit-check) shellHook;
   packages = p: [];
   buildInputs = with haskellPackages;
     [
