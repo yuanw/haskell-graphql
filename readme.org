@@ -41,10 +41,88 @@ haskellPackages.shellFor {
 
 ** wire [[https://github.com/cachix/pre-commit-hooks.nix][pre-commit-hooks]] (optional)
 * Hello World in morpheusgraphql
+** depend packages
+#+begin_src
+  build-depends:
+      base              >=4.13   && <4.14
+    , bytestring
+    , morpheus-graphql  >=0.10.0
+    , scotty
+    , text
+#+end_src
+
+Main.hs
+#+begin_src haskell
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+
+module Main where
+
+import qualified Data.ByteString.Lazy.Char8 as B
+
+import           Control.Monad.IO.Class     (liftIO)
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType,
+                                             IORes, Undefined (..))
+import           Data.Text                  (Text)
+import           GHC.Generics
+import           Web.Scotty
+--importGQLDocumentWithNamespace "schema.gql"
+
+data Query m = Query
+    { deity :: DeityArgs -> m Deity
+    }
+    deriving (Generic, GQLType)
+
+data Deity = Deity
+    { fullName :: Text -- Non-Nullable Field
+    -- Nullable Field
+    , power    :: Maybe Text -- Nullable Field
+    }
+    deriving (Generic, GQLType)
+
+data DeityArgs = DeityArgs
+    { name      :: Text -- Required Argument
+    -- Optional Argument
+    , mythology :: Maybe Text -- Optional Argument
+    }
+    deriving (Generic)
+
+morpheus = Deity
+      { fullName = "Morpheus"
+      , power = (Just "Shapeshifting")
+      }
+
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver = GQLRootResolver {
+      queryResolver = Query (const $ pure morpheus),
+      mutationResolver = Undefined,
+      subscriptionResolver = Undefined
+    }
+
+api :: B.ByteString -> IO B.ByteString
+api = interpreter rootResolver
+
+main :: IO ()
+main = scotty 3000 $ post "/api" $ raw =<< (liftIO . api =<< body)
+#+end_src
+
+https://hackage.haskell.org/package/scotty-0.11.5/docs/Web-Scotty.html#v:body
+https://hackage.haskell.org/package/scotty-0.11.5/docs/Web-Scotty.html#v:post
+https://hackage.haskell.org/package/scotty-0.11.5/docs/Web-Scotty.html#v:raw
+
 https://insomnia.rest/graphql/
 * References
 - https://github.com/dandoh/web-haskell-graphql-postgres-boilerplate
 - https://morpheusgraphql.com/
 * TODOS
-** wire https://github.com/cachix/pre-commit-hooks.nix
 ** figure out template haskell approach
