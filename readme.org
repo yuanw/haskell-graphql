@@ -1,0 +1,50 @@
+#+TITLE: Learning Haskell + graphql log
+
+
+* Bootstrap project
+** Cabal
+#+begin_src shell
+nix-shell -p ghc cabal-install --run 'cabal init'
+#+end_src
+
+** lorri
+#+begin_src shell
+lorri init
+direnv allow
+lorri daemon & disown
+#+end_src
+** Pin down nixpgs (optional)
+** Setup haskell development environment
+#+begin_src nix
+{ nixpkgs ? import <nixpkgs> {} , compiler ? "ghc882" }:
+let
+  inherit (nixpkgs) haskellPackages;
+  myPackages = haskellPackages.callCabal2nix "project" ./haskell-graphql.cabal  {};
+
+
+  all-hies = import (fetchTarball "https://github.com/infinisil/all-hies/tarball/master") {};
+in
+haskellPackages.shellFor {
+  withHoogle = true;
+  packages = p: [myPackages];
+  buildInputs = with haskellPackages;
+    [ hlint
+      ghcid
+      cabal2nix
+      stylish-haskell
+      cabal-install
+      (all-hies.selection {selector = p: {inherit (p) ghc882; };})
+    ];
+}
+
+#+end_src
+
+** wire [[https://github.com/cachix/pre-commit-hooks.nix][pre-commit-hooks]] (optional)
+* Hello World in morpheusgraphql
+https://insomnia.rest/graphql/
+* References
+- https://github.com/dandoh/web-haskell-graphql-postgres-boilerplate
+- https://morpheusgraphql.com/
+* TODOS
+** wire https://github.com/cachix/pre-commit-hooks.nix
+** figure out template haskell approach
